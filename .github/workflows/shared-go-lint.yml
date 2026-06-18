@@ -32,7 +32,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: toweray/ci-cookbook/actions/setup-go@master
+      - uses: toweray/ci-cookbook/actions/setup-go@trunk
         with:
           go-version: ${{ inputs.go-version }}
 

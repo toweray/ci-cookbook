@@ -37,7 +37,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: ./actions/setup-java
+      - uses: toweray/ci-cookbook/actions/setup-java@trunk
         with:
           java-version: ${{ inputs.java-version }}
 

@@ -31,7 +31,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
     steps:
-      - uses: toweray/ci-cookbook/actions/setup-node@master
+      - uses: toweray/ci-cookbook/actions/setup-node@trunk
         with:
           node-version: ${{ inputs.node-version }}
           cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
