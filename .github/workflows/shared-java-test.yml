@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: Java version
+        required: false
+        type: string
+        default: '21'
+      gradle-task:
+        description: Gradle task to run
+        required: false
+        type: string
+        default: test
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: toweray/ci-cookbook/actions/setup-java@master
+        with:
+          java-version: ${{ inputs.java-version }}
+
+      - name: Test
+        run: ./gradlew ${{ inputs.gradle-task }}

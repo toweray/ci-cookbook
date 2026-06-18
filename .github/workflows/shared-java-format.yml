@@ -1,0 +1,25 @@
+name: Format
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: Java version
+        required: false
+        type: string
+        default: '21'
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: toweray/ci-cookbook/actions/setup-java@master
+        with:
+          java-version: ${{ inputs.java-version }}
+
+      - name: Check formatting
+        run: ./gradlew spotlessCheck

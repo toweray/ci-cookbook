@@ -1,0 +1,55 @@
+name: Lint
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        description: Go version
+        required: false
+        type: string
+        default: '1.25.0'
+      golangci-lint-version:
+        description: golangci-lint version
+        required: false
+        type: string
+        default: latest
+      args:
+        description: golangci-lint arguments
+        required: false
+        type: string
+        default: ./...
+    secrets:
+      NETRC_CREDENTIALS:
+        required: false
+      GO_PRIVATE:
+        required: false
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: toweray/ci-cookbook/actions/setup-go@master
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Configure private modules
+        env:
+          NETRC_CREDENTIALS: ${{ secrets.NETRC_CREDENTIALS }}
+          GO_PRIVATE: ${{ secrets.GO_PRIVATE }}
+        run: |
+          if [[ -z "${NETRC_CREDENTIALS}" ]]; then
+            exit 0
+          fi
+          go env -w "GOPRIVATE=${GO_PRIVATE}"
+          printf '%s\n' "${NETRC_CREDENTIALS}" > ~/.netrc
+          chmod 600 ~/.netrc
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: ${{ inputs.golangci-lint-version }}
+          args: ${{ inputs.args }}

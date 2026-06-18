@@ -1,0 +1,95 @@
+name: Release Plugin
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: Java version
+        required: false
+        type: string
+        default: '21'
+      image-name:
+        description: Must match Gradle project.name (shadowJar output)
+        required: true
+        type: string
+      stable-tags:
+        description: Comma-separated stable tags (e.g. latest, dev, staging). Empty pushes only commit SHA.
+        required: false
+        type: string
+        default: latest
+      oras-version:
+        description: ORAS CLI version installed by setup-oras
+        required: false
+        type: string
+        default: '1.3.0'
+    secrets:
+      REGISTRY_USER:
+        required: true
+      REGISTRY_PASSWORD:
+        required: true
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: ./actions/setup-java
+        with:
+          java-version: ${{ inputs.java-version }}
+
+      - name: Validate registry config
+        shell: bash
+        env:
+          REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${REGISTRY_HOST}" ]]; then
+            echo "::error::REGISTRY_HOST variable is not set (org or repo variable required)"
+            exit 1
+          fi
+
+      - name: Build
+        run: ./gradlew --no-daemon shadowJar
+
+      - name: Setup oras
+        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
+        with:
+          version: ${{ inputs.oras-version }}
+
+      - name: Login to registry
+        env:
+          REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          printf '%s' "${REGISTRY_PASSWORD}" | oras login "${REGISTRY_HOST}" \
+            -u "${REGISTRY_USER}" \
+            --password-stdin
+
+      - name: Push artifact
+        shell: bash
+        env:
+          REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}
+          IMAGE_NAME: ${{ inputs.image-name }}
+          STABLE_TAGS: ${{ inputs.stable-tags }}
+        run: |
+          set -euo pipefail
+
+          sha="$(git rev-parse --short HEAD)"
+          repo="${REGISTRY_HOST}/plugins/${IMAGE_NAME}"
+          artifact="build/libs/${IMAGE_NAME}.jar"
+
+          oras push "${repo}:${sha}" "${artifact}:application/java-archive"
+
+          stable="$(echo "${STABLE_TAGS}" | tr -d '[:space:]')"
+          if [[ -n "${stable}" ]]; then
+            IFS=',' read -ra arr <<< "${stable}"
+            for t in "${arr[@]}"; do
+              [[ -z "${t}" ]] && continue
+              oras tag "${repo}:${sha}" "${t}"
+            done
+          fi
