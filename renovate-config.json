@@ -1,0 +1,97 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Standard preset across repositories for Toweray",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "labels": [
+    "type: dependencies"
+  ],
+  "schedule": [
+    "after 5pm on the 2nd day of the month"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "matchPackageNames": [
+        "!gradle"
+      ],
+      "groupName": "patch-release dependency changes"
+    },
+    {
+      "matchManagers": [
+        "github-actions",
+        "gradle-wrapper"
+      ],
+      "groupName": "gradle and github actions"
+    },
+    {
+      "matchDepTypes": [
+        "plugin"
+      ],
+      "groupName": "gradle and github actions"
+    },
+    {
+      "matchFileNames": [
+        "build-logic/*",
+        "buildSrc/*"
+      ],
+      "groupName": "gradle and github actions"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/aws/aws-sdk-go-v2{/,}**"
+      ],
+      "groupName": "aws-sdk-go-v2"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "go.uber.org/{/,}**"
+      ],
+      "groupName": "uber-go"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/gofiber/{/,}**"
+      ],
+      "groupName": "gofiber"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/jackc/{/,}**"
+      ],
+      "groupName": "jackc"
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "dockerfile"
+    }
+  ],
+  "pinDigest": {
+    "schedule": [
+      "at any time"
+    ],
+    "automerge": true,
+    "automergeType": "pr"
+  },
+  "prHourlyLimit": 4,
+  "semanticCommitType": "build",
+  "commitMessagePrefix": "chore(deps): "
+}
