@@ -13,10 +13,9 @@ on:
         required: true
         type: string
       stable-tags:
-        description: Comma-separated stable tags (e.g. latest, dev, staging). Empty pushes only commit SHA.
-        required: false
+        description: Comma-separated tags (e.g. dev or v1.0.0, latest). First tag is pushed; the rest are applied via oras tag.
+        required: true
         type: string
-        default: latest
       oras-version:
         description: ORAS CLI version installed by setup-oras
         required: false
@@ -79,17 +78,31 @@ jobs:
         run: |
           set -euo pipefail
 
-          sha="$(git rev-parse --short HEAD)"
           repo="${REGISTRY_HOST}/plugins/${IMAGE_NAME}"
           artifact="build/libs/${IMAGE_NAME}.jar"
 
-          oras push "${repo}:${sha}" "${artifact}:application/java-archive"
-
           stable="$(echo "${STABLE_TAGS}" | tr -d '[:space:]')"
-          if [[ -n "${stable}" ]]; then
-            IFS=',' read -ra arr <<< "${stable}"
-            for t in "${arr[@]}"; do
-              [[ -z "${t}" ]] && continue
-              oras tag "${repo}:${sha}" "${t}"
-            done
+          if [[ -z "${stable}" ]]; then
+            echo "::error::stable-tags is required"
+            exit 1
           fi
+
+          IFS=',' read -ra arr <<< "${stable}"
+          tags=()
+          for t in "${arr[@]}"; do
+            [[ -z "${t}" ]] && continue
+            tags+=("${t}")
+          done
+
+          if [[ ${#tags[@]} -eq 0 ]]; then
+            echo "::error::stable-tags is required"
+            exit 1
+          fi
+
+          primary="${tags[0]}"
+
+          oras push "${repo}:${primary}" "${artifact}:application/java-archive"
+
+          for t in "${tags[@]:1}"; do
+            oras tag "${repo}:${primary}" "${t}"
+          done
