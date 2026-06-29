@@ -26,6 +26,10 @@ on:
         required: true
       REGISTRY_PASSWORD:
         required: true
+      NEXUS_USER:
+        required: true
+      NEXUS_PASSWORD:
+        required: true
 
 jobs:
   release:
@@ -34,6 +38,9 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      ORG_GRADLE_PROJECT_towerayUsername: ${{ secrets.NEXUS_USER }}
+      ORG_GRADLE_PROJECT_towerayPassword: ${{ secrets.NEXUS_PASSWORD }}
 
     steps:
       - uses: toweray/ci-cookbook/actions/setup-java@trunk
