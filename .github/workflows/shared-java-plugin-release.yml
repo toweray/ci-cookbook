@@ -26,9 +26,8 @@ on:
         required: true
       REGISTRY_PASSWORD:
         required: true
-      NEXUS_USER:
-        required: true
-      NEXUS_PASSWORD:
+      publishing_env_vars:
+        description: Env vars for Gradle (ORG_GRADLE_PROJECT_*), KEY="value" per line
         required: true
 
 jobs:
@@ -38,9 +37,6 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-    env:
-      ORG_GRADLE_PROJECT_towerayUsername: ${{ secrets.NEXUS_USER }}
-      ORG_GRADLE_PROJECT_towerayPassword: ${{ secrets.NEXUS_PASSWORD }}
 
     steps:
       - uses: toweray/ci-cookbook/actions/setup-java@trunk
@@ -59,7 +55,26 @@ jobs:
           fi
 
       - name: Build
-        run: ./gradlew --no-daemon shadowJar
+        env:
+          PUBLISHING_ENV: ${{ secrets.publishing_env_vars }}
+        run: |
+          set -euo pipefail
+
+          publishing_env_vars="${PUBLISHING_ENV}"
+          if [[ -z "${publishing_env_vars}" ]]; then
+            echo "::error::publishing_env_vars is required"
+            exit 1
+          fi
+
+          regex='([a-zA-Z0-9_]+)="((([^"]*\\n)*[^"]*)|([^"]*))"'
+          while [[ $publishing_env_vars =~ $regex ]]; do
+            var_name="${BASH_REMATCH[1]}"
+            var_value="${BASH_REMATCH[2]}"
+            publishing_env_vars="${publishing_env_vars#*$var_name=\"$var_value\"}"
+            export "${var_name}=${var_value}"
+          done
+
+          ./gradlew --no-daemon shadowJar
 
       - name: Setup oras
         uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
