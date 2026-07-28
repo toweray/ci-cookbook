@@ -101,7 +101,8 @@ jobs:
           set -euo pipefail
 
           repo="${REGISTRY_HOST}/plugins/${IMAGE_NAME}"
-          artifact="build/libs/${IMAGE_NAME}.jar"
+          artifact_dir="build/libs"
+          artifact_name="${IMAGE_NAME}.jar"
 
           stable="$(echo "${STABLE_TAGS}" | tr -d '[:space:]')"
           if [[ -z "${stable}" ]]; then
@@ -123,7 +124,9 @@ jobs:
 
           primary="${tags[0]}"
 
-          oras push "${repo}:${primary}" "${artifact}:application/java-archive"
+          pushd "${artifact_dir}" >/dev/null
+          oras push "${repo}:${primary}" "${artifact_name}:application/java-archive"
+          popd >/dev/null
 
           for t in "${tags[@]:1}"; do
             oras tag "${repo}:${primary}" "${t}"
